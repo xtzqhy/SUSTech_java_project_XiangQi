@@ -16,13 +16,8 @@ public class Board {
     public Board() {
         initializePieces();
     }
-
-    public boolean isRedTurn() {
-        return isRedTurn;
-    }
     
     private void initializePieces() {
-        
         //初始化
          for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
@@ -78,6 +73,71 @@ public class Board {
         return pieces[row][col];
     }
 
+    public boolean isRedTurn() {
+        return isRedTurn;
+    }
+
+    // 检查某一方的将帅是否安全
+    private boolean isGeneralSafe(boolean isRedSide) {
+        //找将帅
+        int generalRow = -1, generalCol = -1;
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece p = pieces[r][c];
+                if (p != null && p instanceof GeneralPiece && p.isRed() == isRedSide) {
+                    generalRow = r;
+                    generalCol = c;
+                    break;
+                }
+            }
+        }
+
+        //异常状态，抛一个异常
+        if (generalRow == -1){
+            throw new IllegalStateException("严重错误：在棋盘上找不到" + (isRedSide ? "红方" : "黑方") + "的将帅！");
+        }
+
+        //检查敌方棋子能不能攻击到这个位置
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece p = pieces[r][c];
+                //如果是敌方棋子，且能走到将帅的位置，说明被将军了
+                if (p != null && p.isRed() != isRedSide) {
+                    if (p.canMove(this, r, c, generalRow, generalCol)) {
+                        return false; 
+                    }
+                }
+            }
+        }
+
+        //飞将规则
+        int enemyGeneralRow = -1, enemyGeneralCol = -1;
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece p = pieces[r][c];
+                if (p != null && p instanceof GeneralPiece && p.isRed() != isRedSide) {
+                    enemyGeneralRow = r;
+                    enemyGeneralCol = c;
+                    break;
+                }
+            }
+        }
+        if (generalCol == enemyGeneralCol) {
+            int minRow = Math.min(generalRow, enemyGeneralRow);
+            int maxRow = Math.max(generalRow, enemyGeneralRow);
+            boolean hasPieceBetween = false;
+            for (int r = minRow + 1; r < maxRow; r++) {
+                if (pieces[r][generalCol] != null) {
+                    hasPieceBetween = true;
+                    break;
+                }
+            }
+            if (!hasPieceBetween) {
+                return false; 
+            }
+        }
+        return true;
+    }
     public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {
         //棋子、坐标、所属方合法性检查
         if (!isInside(fromRow, fromCol) || !isInside(toRow, toCol)) {
@@ -109,10 +169,16 @@ public class Board {
         pieces[fromRow][fromCol] = null;
         pieces[toRow][toCol] = piece;
 
-        //仅在成功移动后切换回合，并判断将军、胜负等状态
-        isRedTurn = !isRedTurn;
+        //检查走完后己方将帅是否安全
+        boolean safe = isGeneralSafe(piece.isRed());
 
-        // TODO: 检查走完后己方将帅是否安全
+        if (!safe) {
+            pieces[fromRow][fromCol] = piece;
+            pieces[toRow][toCol] = targetPiece;
+            return false;
+        }
+
+        isRedTurn = !isRedTurn; // 切换回合
         return true;
     }
 }

@@ -11,8 +11,6 @@ public class GeneralPiece extends Piece {
     public boolean canMove(Board board, int fromRow, int fromCol, int toRow, int toCol) {
         //规则：只能九宫格内直走一格
         
-        // TODO:飞将没实现
-        
         //直走一格
         int rowDiff = Math.abs(toRow - fromRow);
         int colDiff = Math.abs(toCol - fromCol);
