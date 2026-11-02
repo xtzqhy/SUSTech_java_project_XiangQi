@@ -3,8 +3,8 @@ package edu.sustech.xiangqi.model;
 // 红帅
 
 public class GeneralPiece extends Piece {
-    public GeneralPiece() {
-        super("帅", true);
+    public GeneralPiece(boolean isRed) {
+        super(isRed ? "帥" : "將", isRed);
     }
 
     @Override

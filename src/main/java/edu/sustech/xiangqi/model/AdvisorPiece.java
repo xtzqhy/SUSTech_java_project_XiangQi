@@ -3,8 +3,8 @@ package edu.sustech.xiangqi.model;
 // 红仕：每次斜走一格，不能离开红方九宫
 
 public class AdvisorPiece extends Piece {
-    public AdvisorPiece() {
-        super("仕", true);
+    public AdvisorPiece(boolean isRed) {
+        super(isRed ? "仕" : "士", isRed);
     }
 
     @Override
