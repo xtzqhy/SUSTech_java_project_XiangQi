@@ -45,26 +45,42 @@ public class ChessController extends MouseAdapter {
         }
 
         Piece clickedPiece = board.getPieceAt(row, col);
+        boolean isRedTurn = board.isRedTurn();
+
         if (selectedRow == -1) {
             if (clickedPiece != null) {
+                //判断是不是选了对方的棋子
+                if (clickedPiece.isRed() != isRedTurn) {
+                    return;
+                }
                 select(row, col);
             }
             return;
         }
 
-        // 点击另一枚己方棋子时切换选择
+        //切换选中
         Piece selectedPiece = board.getPieceAt(selectedRow, selectedCol);
-        if (clickedPiece != null && selectedPiece != null
-                && clickedPiece.isRed() == selectedPiece.isRed()) {
+        if (clickedPiece != null && clickedPiece.isRed() == selectedPiece.isRed()) {
             select(row, col);
             return;
         }
 
-        // 移动失败时保留选择，用户可以继续选择其他落点
-        if (board.tryMove(selectedRow, selectedCol, row, col)) {
+        boolean moveSuccess = board.tryMove(selectedRow, selectedCol, row, col);
+        if (moveSuccess) {
             boardPanel.showLastMove(selectedRow, selectedCol, row, col);
             clearSelection();
             checkGameOver();
+        } else {
+            boolean isCurrentSideInCheck = board.isInCheck(isRedTurn);
+            if (isCurrentSideInCheck) {
+                JOptionPane.showMessageDialog(boardPanel, 
+                    "你正在被将军，请应将", 
+                    "将军警报", JOptionPane.WARNING_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(boardPanel, 
+                    "操作不合法", 
+                    "违规操作", JOptionPane.WARNING_MESSAGE);
+            }
         }
     }
 

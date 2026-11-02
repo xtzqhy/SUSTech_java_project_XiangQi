@@ -147,7 +147,7 @@ public class Board {
     }
 
     //棋子、坐标、所属方合法性检查
-    private boolean isPseudoLegalMove(int fromRow, int fromCol, int toRow, int toCol) {
+    public boolean isPseudoLegalMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (!isInside(fromRow, fromCol) || !isInside(toRow, toCol)) {
             return false;
         }

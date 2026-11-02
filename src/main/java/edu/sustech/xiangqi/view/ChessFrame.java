@@ -16,15 +16,15 @@ public final class ChessFrame extends JFrame {
         super("中国象棋");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         boardPanel = new BoardPanel(board);
-        // 2. 新建一个带有居中布局的容器面板
+        
         JPanel containerPanel = new JPanel(new java.awt.GridBagLayout());
-        containerPanel.setBackground(new java.awt.Color(239, 218, 179)); // 让底色和棋盘一致
-        containerPanel.add(boardPanel); // 把棋盘放进正中间
+        containerPanel.setBackground(new java.awt.Color(239, 218, 179)); 
+        containerPanel.add(boardPanel); 
         setContentPane(containerPanel);
 
-        // 3. 建立顶部菜单栏 (这会自动在左上角生成)
+        
         JMenuBar menuBar = new JMenuBar();
-        JMenu gameMenu = new JMenu("游戏");
+        JMenu gameMenu = new JMenu("选项");
         
         newGameItem = new JMenuItem("新游戏");
         resignItem = new JMenuItem("认输");
@@ -34,11 +34,10 @@ public final class ChessFrame extends JFrame {
         gameMenu.add(resignItem);
         gameMenu.add(drawItem);
         menuBar.add(gameMenu);
-        setJMenuBar(menuBar); // 把菜单栏设置到窗口上
+        setJMenuBar(menuBar); 
 
-        // 4. 窗口设置
+        
         setSize(1000, 1000);
-        // setResizable(false); // 如果你想让用户能拉伸窗口，可以删掉这行
         setLocationRelativeTo(null);
     }
 
