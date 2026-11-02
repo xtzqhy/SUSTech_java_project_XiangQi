@@ -14,7 +14,7 @@ public class Main {
             public void run() {
                 Board board = new Board();
                 ChessFrame frame = new ChessFrame(board);
-                ChessController controller = new ChessController(board, frame.getBoardPanel());
+                ChessController controller = new ChessController(board, frame.getBoardPanel(),frame);
 
                 frame.getBoardPanel().addMouseListener(controller);
                 frame.getNewGameItem().addActionListener(e -> controller.resetGame());

@@ -11,6 +11,7 @@ public final class ChessFrame extends JFrame {
     private final JMenuItem newGameItem;
     private final JMenuItem resignItem;
     private final JMenuItem drawItem;
+    private JLabel statusLabel; 
 
     public ChessFrame(Board board) {
         super("中国象棋");
@@ -22,7 +23,21 @@ public final class ChessFrame extends JFrame {
         containerPanel.add(boardPanel); 
         setContentPane(containerPanel);
 
+        // 1. 整体用 BorderLayout
+        setLayout(new java.awt.BorderLayout());
         
+        // 2. 中间放棋盘 (用一个Panel居中)
+        JPanel centerPanel = new JPanel(new java.awt.GridBagLayout());
+        centerPanel.setBackground(new java.awt.Color(239, 218, 179));
+        centerPanel.add(boardPanel);
+        add(centerPanel, java.awt.BorderLayout.CENTER);
+
+        // 3. 底部放状态栏
+        statusLabel = new JLabel("当前回合：红方", JLabel.CENTER);
+        statusLabel.setFont(new java.awt.Font("微软雅黑", java.awt.Font.BOLD, 20));
+        statusLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        add(statusLabel, java.awt.BorderLayout.SOUTH);
+
         JMenuBar menuBar = new JMenuBar();
         JMenu gameMenu = new JMenu("选项");
         
@@ -52,5 +67,10 @@ public final class ChessFrame extends JFrame {
     }
     public JMenuItem getDrawItem() {
         return drawItem;
+    }
+
+    public void updateStatus(String text, boolean isWarning) {
+        statusLabel.setText(text);
+        statusLabel.setForeground(isWarning ? java.awt.Color.RED : java.awt.Color.BLACK);
     }
 }

@@ -3,6 +3,7 @@ package edu.sustech.xiangqi.controller;
 import edu.sustech.xiangqi.model.Board;
 import edu.sustech.xiangqi.model.Piece;
 import edu.sustech.xiangqi.view.BoardPanel;
+import edu.sustech.xiangqi.view.ChessFrame;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -14,15 +15,17 @@ import java.awt.event.MouseEvent;
 public class ChessController extends MouseAdapter {
     private final Board board;
     private final BoardPanel boardPanel;
+    private final ChessFrame frame;     
 
     // 默认 -1 没有选中任何棋子
     private int selectedRow = -1;
     private int selectedCol = -1;
     private boolean isGameOver = false;
 
-    public ChessController(Board board, BoardPanel boardPanel) {
+    public ChessController(Board board, BoardPanel boardPanel, ChessFrame frame) {
         this.board = board;
         this.boardPanel = boardPanel;
+        this.frame = frame;
     }
 
     @Override
@@ -69,6 +72,14 @@ public class ChessController extends MouseAdapter {
         if (moveSuccess) {
             boardPanel.showLastMove(selectedRow, selectedCol, row, col);
             clearSelection();
+            boolean nextSide = board.isRedTurn();
+            String sideName = nextSide ? "红方" : "黑方";
+            
+            if (board.isInCheck(nextSide)) {
+                frame.updateStatus("警告：" + sideName + " 正被将军！", true); // 红色警告
+            } else {
+                frame.updateStatus("当前回合：" + sideName, false); // 黑色正常
+            }
             checkGameOver();
         } else {
             boolean isCurrentSideInCheck = board.isInCheck(isRedTurn);
@@ -103,16 +114,15 @@ public class ChessController extends MouseAdapter {
             return;
         }
 
-        boolean inCheck = board.isInCheck(sideToMove);
         String winner = sideToMove ? "黑方" : "红方";
-        String reason = inCheck ? "将死" : "困毙";
 
         JOptionPane.showMessageDialog(
                 boardPanel,
-                winner + "胜！（对方" + reason + "）",
+                winner + "胜！",
                 "游戏结束",
                 JOptionPane.INFORMATION_MESSAGE);
         isGameOver = true;
+        frame.updateStatus("游戏结束！", true);
     }
 
     //新游戏
@@ -120,7 +130,8 @@ public class ChessController extends MouseAdapter {
         board.initializePieces();            
         boardPanel.clearLastMove();     
         clearSelection();               
-        isGameOver = false;             
+        isGameOver = false;      
+        frame.updateStatus("当前回合：红方", false);       
     }
 
     //认输
