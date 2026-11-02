@@ -138,8 +138,9 @@ public class Board {
         }
         return true;
     }
-    public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {
-        //棋子、坐标、所属方合法性检查
+
+    //棋子、坐标、所属方合法性检查
+    private boolean isPseudoLegalMove(int fromRow, int fromCol, int toRow, int toCol) {
         if (!isInside(fromRow, fromCol) || !isInside(toRow, toCol)) {
             return false;
         }
@@ -159,26 +160,69 @@ public class Board {
         if (targetPiece != null && targetPiece.isRed() == piece.isRed()) {
             return false;
         }   
+        return true;
+    }
+
+    //模拟移动
+    private boolean wouldBeSafe(int fromRow, int fromCol, int toRow, int toCol) {
+        Piece piece = pieces[fromRow][fromCol];
+        Piece targetPiece = pieces[toRow][toCol];
+
+        pieces[fromRow][fromCol] = null;
+        pieces[toRow][toCol] = piece;
+
+        boolean safe = isGeneralSafe(piece.isRed());
+
+        pieces[fromRow][fromCol] = piece;
+        pieces[toRow][toCol] = targetPiece;
+
+        return safe;
+    }
+
+    //检查某一方是否有合法走法
+    public boolean hasAnyLegalMove(boolean isRedSide) {
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece piece = pieces[r][c];
+                if (piece != null && piece.isRed() == isRedSide) {
+                    //尝试走到棋盘上的每一个格子
+                    for (int tr = 0; tr < ROWS; tr++) {
+                        for (int tc = 0; tc < COLS; tc++) {
+                            if(!isPseudoLegalMove(r, c, tr, tc)) continue;
+                            
+                            //检查局部走法是否合法
+                            if (piece.canMove(this, r, c, tr, tc)) {
+                                return wouldBeSafe(r, c, tr, tc);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false; 
+    }
+
+    public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {
+        //棋子合法性检查
+        if (!isPseudoLegalMove(fromRow, fromCol, toRow, toCol)) {
+            return false;
+        }   
+
+        Piece piece = getPieceAt(fromRow, fromCol);
 
         //回合合法性检查
         if (piece.isRed() != isRedTurn()) {
             return false;
         }
 
-        //实现移动和吃子
+        //移动合法性检查
+        if (!wouldBeSafe(fromRow, fromCol, toRow, toCol)) return false;
+
+        //执行
         pieces[fromRow][fromCol] = null;
         pieces[toRow][toCol] = piece;
+        isRedTurn = !isRedTurn; 
 
-        //检查走完后己方将帅是否安全
-        boolean safe = isGeneralSafe(piece.isRed());
-
-        if (!safe) {
-            pieces[fromRow][fromCol] = piece;
-            pieces[toRow][toCol] = targetPiece;
-            return false;
-        }
-
-        isRedTurn = !isRedTurn; // 切换回合
         return true;
     }
 }
