@@ -10,10 +10,17 @@ public class Board {
     // 存储棋子位置
     private final Piece[][] pieces = new Piece[ROWS][COLS];
 
+    //当前回合是谁
+    private boolean isRedTurn = true; 
+
     public Board() {
         initializePieces();
     }
 
+    public boolean isRedTurn() {
+        return isRedTurn;
+    }
+    
     private void initializePieces() {
         
         //初始化
@@ -72,6 +79,7 @@ public class Board {
     }
 
     public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {
+        //棋子、坐标、所属方合法性检查
         if (!isInside(fromRow, fromCol) || !isInside(toRow, toCol)) {
             return false;
         }
@@ -83,23 +91,28 @@ public class Board {
         if (piece == null) {
             return false;
         }
-
-        // TODO: 加入回合检查，只允许当前一方移动自己的棋子
-
-        // TODO: 区分己方占用与敌方棋子，并实现吃子
-        if (getPieceAt(toRow, toCol) != null) {
-            return false;
-        }
-
         if (!piece.canMove(this, fromRow, fromCol, toRow, toCol)) {
             return false;
         }
 
-        // TODO: 检查走完后己方将帅是否安全
+        Piece targetPiece = getPieceAt(toRow, toCol);
+        if (targetPiece != null && targetPiece.isRed() == piece.isRed()) {
+            return false;
+        }   
+
+        //回合合法性检查
+        if (piece.isRed() != isRedTurn()) {
+            return false;
+        }
+
+        //实现移动和吃子
         pieces[fromRow][fromCol] = null;
         pieces[toRow][toCol] = piece;
 
-        // TODO: 仅在成功移动后切换回合，并判断将军、胜负等状态
+        //仅在成功移动后切换回合，并判断将军、胜负等状态
+        isRedTurn = !isRedTurn;
+
+        // TODO: 检查走完后己方将帅是否安全
         return true;
     }
 }
