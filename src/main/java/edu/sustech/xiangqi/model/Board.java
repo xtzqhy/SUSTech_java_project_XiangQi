@@ -94,7 +94,8 @@ public class Board {
 
         //异常状态，抛一个异常
         if (generalRow == -1){
-            throw new IllegalStateException("严重错误：在棋盘上找不到" + (isRedSide ? "红方" : "黑方") + "的将帅！");
+            return false;
+            //throw new IllegalStateException("严重错误：在棋盘上找不到" + (isRedSide ? "红方" : "黑方") + "的将帅！");
         }
 
         //检查敌方棋子能不能攻击到这个位置
@@ -137,6 +138,10 @@ public class Board {
             }
         }
         return true;
+    }
+
+    public boolean isInCheck(boolean isRedSide) {
+        return !isGeneralSafe(isRedSide);
     }
 
     //棋子、坐标、所属方合法性检查
@@ -188,11 +193,9 @@ public class Board {
                     //尝试走到棋盘上的每一个格子
                     for (int tr = 0; tr < ROWS; tr++) {
                         for (int tc = 0; tc < COLS; tc++) {
-                            if(!isPseudoLegalMove(r, c, tr, tc)) continue;
-                            
                             //检查局部走法是否合法
-                            if (piece.canMove(this, r, c, tr, tc)) {
-                                return wouldBeSafe(r, c, tr, tc);
+                            if (isPseudoLegalMove(r, c, tr, tc)) {
+                                if(wouldBeSafe(r, c, tr, tc)) return true;
                             }
                         }
                     }
@@ -202,18 +205,17 @@ public class Board {
         return false; 
     }
 
-    public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {
+    public boolean tryMove(int fromRow, int fromCol, int toRow, int toCol) {    
+        //回合合法性检查
+        Piece piece = getPieceAt(fromRow, fromCol);
+        if (piece.isRed() != isRedTurn()) {
+            return false;
+        }
+
         //棋子合法性检查
         if (!isPseudoLegalMove(fromRow, fromCol, toRow, toCol)) {
             return false;
         }   
-
-        Piece piece = getPieceAt(fromRow, fromCol);
-
-        //回合合法性检查
-        if (piece.isRed() != isRedTurn()) {
-            return false;
-        }
 
         //移动合法性检查
         if (!wouldBeSafe(fromRow, fromCol, toRow, toCol)) return false;

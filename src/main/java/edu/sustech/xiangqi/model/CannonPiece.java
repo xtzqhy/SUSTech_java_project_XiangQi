@@ -32,7 +32,7 @@ public class CannonPiece extends Piece {
         if (target == null) {
             return pieceCountBetween == 0;
         } else {
-            return pieceCountBetween == 1;//trymove里已检查过
+            return pieceCountBetween == 1;//trymove里保证是敌方子
         }
     }
 }

@@ -4,6 +4,7 @@ import edu.sustech.xiangqi.model.Board;
 import edu.sustech.xiangqi.model.Piece;
 import edu.sustech.xiangqi.view.BoardPanel;
 
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
@@ -60,6 +61,7 @@ public class ChessController extends MouseAdapter {
         // 移动失败时保留选择，用户可以继续选择其他落点
         if (board.tryMove(selectedRow, selectedCol, row, col)) {
             clearSelection();
+            checkGameOver();
         }
     }
 
@@ -73,5 +75,24 @@ public class ChessController extends MouseAdapter {
         selectedRow = -1;
         selectedCol = -1;
         boardPanel.showSelection(-1, -1);
+    }
+
+    private void checkGameOver() {
+        boolean sideToMove = board.isRedTurn();
+
+        
+        if (board.hasAnyLegalMove(sideToMove)) {
+            return;
+        }
+
+        boolean inCheck = board.isInCheck(sideToMove);
+        String winner = sideToMove ? "黑方" : "红方";
+        String reason = inCheck ? "将死" : "困毙";
+
+        JOptionPane.showMessageDialog(
+                boardPanel,
+                winner + "胜！（对方" + reason + "）",
+                "游戏结束",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 }
