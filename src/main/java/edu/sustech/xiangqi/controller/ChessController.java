@@ -18,6 +18,7 @@ public class ChessController extends MouseAdapter {
     // 默认 -1 没有选中任何棋子
     private int selectedRow = -1;
     private int selectedCol = -1;
+    private boolean isGameOver = false;
 
     public ChessController(Board board, BoardPanel boardPanel) {
         this.board = board;
@@ -26,6 +27,7 @@ public class ChessController extends MouseAdapter {
 
     @Override
     public void mouseClicked(MouseEvent event) {
+        if (isGameOver) return;
         if (!SwingUtilities.isLeftMouseButton(event)) {
             return;
         }
@@ -60,6 +62,7 @@ public class ChessController extends MouseAdapter {
 
         // 移动失败时保留选择，用户可以继续选择其他落点
         if (board.tryMove(selectedRow, selectedCol, row, col)) {
+            boardPanel.showLastMove(selectedRow, selectedCol, row, col);
             clearSelection();
             checkGameOver();
         }
@@ -80,7 +83,6 @@ public class ChessController extends MouseAdapter {
     private void checkGameOver() {
         boolean sideToMove = board.isRedTurn();
 
-        
         if (board.hasAnyLegalMove(sideToMove)) {
             return;
         }
@@ -94,5 +96,50 @@ public class ChessController extends MouseAdapter {
                 winner + "胜！（对方" + reason + "）",
                 "游戏结束",
                 JOptionPane.INFORMATION_MESSAGE);
+        isGameOver = true;
+    }
+
+    //新游戏
+    public void resetGame() {
+        board.initializePieces();            
+        boardPanel.clearLastMove();     
+        clearSelection();               
+        isGameOver = false;             
+    }
+
+    //认输
+    public void resign() {
+        if (isGameOver) return;         
+        
+        boolean isRedTurn = board.isRedTurn();
+        String winner = isRedTurn ? "黑方" : "红方"; 
+        
+        JOptionPane.showMessageDialog(
+                boardPanel, 
+                winner + "胜！（对方认输）", 
+                "游戏结束", 
+                JOptionPane.INFORMATION_MESSAGE);
+                
+        isGameOver = true;
+    }
+
+    //求和
+    public void agreeDraw() {
+        if (isGameOver) return;
+
+        int choice = JOptionPane.showConfirmDialog(
+                null, 
+                "对方同意和棋吗？", 
+                "求和", 
+                JOptionPane.YES_NO_OPTION);
+                
+        if (choice == JOptionPane.YES_OPTION) {
+            JOptionPane.showMessageDialog(
+                    null, 
+                    "游戏结束，双方和棋！", 
+                    "和棋", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            isGameOver = true;
+        }
     }
 }

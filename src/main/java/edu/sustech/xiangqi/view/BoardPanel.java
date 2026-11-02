@@ -26,6 +26,25 @@ public final class BoardPanel extends JPanel {
     private int highlightedRow = -1;
     private int highlightedCol = -1;
 
+    private int lastFromRow = -1, lastFromCol = -1;
+    private int lastToRow = -1, lastToCol = -1;
+
+    public void showLastMove(int fromRow, int fromCol, int toRow, int toCol) {
+        this.lastFromRow = fromRow;
+        this.lastFromCol = fromCol;
+        this.lastToRow = toRow;
+        this.lastToCol = toCol;
+        repaint();
+    }
+
+    public void clearLastMove() {
+        this.lastFromRow = -1;
+        this.lastFromCol = -1;
+        this.lastToRow = -1;
+        this.lastToCol = -1;
+        repaint();
+    }
+
     public BoardPanel(Board board) {
         this.board = board;
         setBackground(new Color(239, 218, 179));
@@ -96,6 +115,16 @@ public final class BoardPanel extends JPanel {
     }
 
     private void drawPieces(Graphics2D g) {
+        if (lastFromRow != -1 && lastToRow != -1) {
+            // 画起点
+            g.setColor(new Color(255, 215, 0, 150));
+            int highlightRadius = PIECE_RADIUS + 6;
+            g.fillOval(screenX(lastFromCol) - highlightRadius, screenY(lastFromRow) - highlightRadius, highlightRadius * 2, highlightRadius * 2);
+            
+            // 画终点
+            g.setColor(new Color(255, 140, 0, 150));
+            g.fillOval(screenX(lastToCol) - highlightRadius, screenY(lastToRow) - highlightRadius, highlightRadius * 2, highlightRadius * 2);
+        }
         for (int row = 0; row < Board.ROWS; row++) {
             for (int col = 0; col < Board.COLS; col++) {
                 Piece piece = board.getPieceAt(row, col);

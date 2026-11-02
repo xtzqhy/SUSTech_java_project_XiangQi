@@ -17,14 +17,13 @@ public class Board {
         initializePieces();
     }
     
-    private void initializePieces() {
+    public void initializePieces() {
         //初始化
          for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 pieces[r][c] = null;
             }
         }
-
         //黑方
         pieces[0][0] = new ChariotPiece(false);
         pieces[0][1] = new HorsePiece(false);
@@ -60,6 +59,9 @@ public class Board {
         pieces[6][4] = new SoldierPiece(true);
         pieces[6][6] = new SoldierPiece(true);
         pieces[6][8] = new SoldierPiece(true);
+
+        //重置回合
+        isRedTurn = true; 
     }
 
     public boolean isInside(int row, int col) {
