@@ -1,4 +1,6 @@
 package edu.sustech.xiangqi.model;
+import java.util.ArrayList;
+import java.util.List;
 
 // 保存棋盘数据，并统一检查和执行移动
 
@@ -12,6 +14,9 @@ public class Board {
 
     //当前回合是谁
     private boolean isRedTurn = true; 
+
+    //历史记录
+    private final List<MoveRecord> history = new ArrayList<>();
 
     public Board() {
         initializePieces();
@@ -62,6 +67,9 @@ public class Board {
 
         //重置回合
         isRedTurn = true; 
+
+        //记录清空
+        history.clear();
     }
 
     public boolean isInside(int row, int col) {
@@ -81,7 +89,6 @@ public class Board {
 
     // 检查某一方的将帅是否安全
     private boolean isGeneralSafe(boolean isRedSide) {
-        //找将帅
         int generalRow = -1, generalCol = -1;
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
@@ -94,17 +101,14 @@ public class Board {
             }
         }
 
-        //异常状态，抛一个异常
+        //找不到将帅，不可能发生，抛异常
         if (generalRow == -1){
-            return false;
-            //throw new IllegalStateException("严重错误：在棋盘上找不到" + (isRedSide ? "红方" : "黑方") + "的将帅！");
+            throw new IllegalStateException("严重错误：在棋盘上找不到" + (isRedSide ? "红方" : "黑方") + "的将帅！");
         }
 
-        //检查敌方棋子能不能攻击到这个位置
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 Piece p = pieces[r][c];
-                //如果是敌方棋子，且能走到将帅的位置，说明被将军了
                 if (p != null && p.isRed() != isRedSide) {
                     if (p.canMove(this, r, c, generalRow, generalCol)) {
                         return false; 
@@ -222,11 +226,26 @@ public class Board {
         //移动合法性检查
         if (!wouldBeSafe(fromRow, fromCol, toRow, toCol)) return false;
 
+        Piece targetPiece = getPieceAt(toRow, toCol);
+        history.add(new MoveRecord(fromRow, fromCol, toRow, toCol, targetPiece));
+
         //执行
         pieces[fromRow][fromCol] = null;
         pieces[toRow][toCol] = piece;
         isRedTurn = !isRedTurn; 
 
+        return true;
+    }
+
+    //悔棋
+    public boolean undoMove() {
+        if (history.isEmpty()) {
+            return false; 
+        }
+        MoveRecord last = history.remove(history.size() - 1);
+        pieces[last.fromRow][last.fromCol] = pieces[last.toRow][last.toCol];
+        pieces[last.toRow][last.toCol] = last.capturedPiece;
+        isRedTurn = !isRedTurn;
         return true;
     }
 }

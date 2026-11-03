@@ -20,7 +20,9 @@ public class Main {
                 frame.getNewGameItem().addActionListener(e -> controller.resetGame());
                 frame.getResignItem().addActionListener(e -> controller.resign());
                 frame.getDrawItem().addActionListener(e -> controller.agreeDraw());
+                frame.getUndoItem().addActionListener(e -> controller.undo());
                 frame.setVisible(true);
+                controller.resetGame();
             }
         });
     }
