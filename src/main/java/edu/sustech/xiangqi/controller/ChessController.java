@@ -4,6 +4,8 @@ import edu.sustech.xiangqi.model.Board;
 import edu.sustech.xiangqi.model.Piece;
 import edu.sustech.xiangqi.view.BoardPanel;
 import edu.sustech.xiangqi.view.ChessFrame;
+import edu.sustech.xiangqi.model.AIPlayer;
+import edu.sustech.xiangqi.model.MoveRecord;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -26,6 +28,11 @@ public class ChessController extends MouseAdapter {
     private int redUndoCount = 3;    
     private int blackUndoCount = 3;  
 
+    private boolean isAIThinking = false;
+    private AIPlayer aiPlayer;      
+    private boolean isAIMode = false; 
+    private boolean isAIRed = false; 
+
     public ChessController(Board board, BoardPanel boardPanel, ChessFrame frame) {
         this.board = board;
         this.boardPanel = boardPanel;
@@ -34,7 +41,7 @@ public class ChessController extends MouseAdapter {
 
     @Override
     public void mouseClicked(MouseEvent event) {
-        if (isGameOver) return;
+        if (isGameOver || isAIThinking) return;
         if (!SwingUtilities.isLeftMouseButton(event)) {
             return;
         }
@@ -46,6 +53,7 @@ public class ChessController extends MouseAdapter {
     }
 
     private void handleClick(int row, int col) {
+        if (isGameOver || isAIThinking) return;
         if (row == selectedRow && col == selectedCol) {
             clearSelection();
             return;
@@ -53,6 +61,10 @@ public class ChessController extends MouseAdapter {
 
         Piece clickedPiece = board.getPieceAt(row, col);
         boolean isRedTurn = board.isRedTurn();
+
+        if (isAIMode && isRedTurn == isAIRed) {
+            return;
+        }
 
         if (selectedRow == -1) {
             if (clickedPiece != null) {
@@ -81,12 +93,16 @@ public class ChessController extends MouseAdapter {
             String undoInfo = " (剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")";
             
             if (board.isInCheck(nextSide)) {
-                frame.updateStatus("当前回合：" + sideName + " ⚠️ 正被将军！" + undoInfo, true); 
+                frame.updateStatus("当前回合：" + sideName + "正被将军！" + undoInfo, true); 
             } else {
                 frame.updateStatus("当前回合：" + sideName + undoInfo, false); 
             }
             
             checkGameOver();
+
+            if (isAIMode && board.isRedTurn() == isAIRed && !isGameOver) {
+                triggerAIMove();
+            }
         } else {
             boolean isCurrentSideInCheck = board.isInCheck(isRedTurn);
             if (isCurrentSideInCheck) {
@@ -133,6 +149,27 @@ public class ChessController extends MouseAdapter {
 
     //新游戏
     public void resetGame() {
+        while(true){
+            int modeChoice = JOptionPane.showConfirmDialog(null, 
+                    "是否开启人机对战模式？", 
+                    "游戏模式选择", 
+                    JOptionPane.YES_NO_OPTION);
+            if (modeChoice == JOptionPane.CLOSED_OPTION) return; 
+            isAIMode = (modeChoice == JOptionPane.YES_OPTION);
+            if (isAIMode) {
+                int colorChoice = JOptionPane.showConfirmDialog(null, 
+                        "你想执红（先手）还是执黑（后手）？\n选“是”执红，选“否”执黑。", 
+                        "选择阵营", JOptionPane.YES_NO_OPTION);
+                
+                if (colorChoice == JOptionPane.CLOSED_OPTION) continue; 
+                isAIRed = (colorChoice == JOptionPane.NO_OPTION); 
+                aiPlayer = new AIPlayer(board, isAIRed);
+            } else {
+                aiPlayer = null; 
+            }
+            break;
+        }
+
         while (true) {
             String input = JOptionPane.showInputDialog(null, 
                     "请输入双方各自允许的最大悔棋次数（必须是非负整数）：", 
@@ -169,6 +206,10 @@ public class ChessController extends MouseAdapter {
         isGameOver = false;      
         frame.updateStatus("当前回合：红方 (剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")", false);
         boardPanel.repaint();  
+
+        if (isAIMode && isAIRed) {
+            triggerAIMove();
+        }
     }
 
     //认输
@@ -209,35 +250,86 @@ public class ChessController extends MouseAdapter {
 
     //悔棋
     public void undo() {
-        if (isGameOver) {
-            JOptionPane.showMessageDialog(null, "游戏已结束，无法悔棋！");
-            return;
-        }
-        
+        if (isGameOver || isAIThinking) return;
+
         boolean isLastMoverRed = !board.isRedTurn(); 
-        if (redUndoCount <= 0||blackUndoCount <= 0) {
-            JOptionPane.showMessageDialog(null, "悔棋次数已用完");
-            return;
-        } 
-        if (board.undoMove()) {
-            if (isLastMoverRed) {
-                redUndoCount--;
-            } else {
-                blackUndoCount--;
+        boolean playerIsRed = !isAIRed;
+        if (isAIMode) {
+            if(board.getHistory().size()<=1){
+                JOptionPane.showMessageDialog(null, "已经没有棋可以悔了！");
+                return;
             }
-            
-            clearSelection();
-            boardPanel.clearLastMove();
-            boardPanel.repaint();
-            
-            
+            if (playerIsRed && redUndoCount <= 0) {
+                JOptionPane.showMessageDialog(null, "你的悔棋次数已用完！");
+                return;
+            } else if (!playerIsRed && blackUndoCount <= 0) {
+                JOptionPane.showMessageDialog(null, "你的悔棋次数已用完！");
+                return;
+            }
+            if (playerIsRed) redUndoCount--;
+            else blackUndoCount--;
+            board.undoMove();
+            board.undoMove();
+        } else {
+            if (board.getHistory().isEmpty()) {
+                JOptionPane.showMessageDialog(null, "已经没有棋可以悔了！");
+                return;
+            }
+            if (isLastMoverRed && redUndoCount <= 0) {
+                JOptionPane.showMessageDialog(null, "红方悔棋次数已用完，无法撤回红方的棋！");
+                return;
+            } else if (!isLastMoverRed && blackUndoCount <= 0) {
+                JOptionPane.showMessageDialog(null, "黑方悔棋次数已用完，无法撤回黑方的棋！");
+                return;
+            }
+            if (isLastMoverRed) redUndoCount--;
+            else blackUndoCount--;
+            board.undoMove();
+        }
+        clearSelection();
+        boardPanel.clearLastMove();
+        boardPanel.repaint();
+        
+        if(isAIMode){
+            frame.updateStatus("已撤回你的棋。当前回合：" + (playerIsRed ? "红方" : "黑方") + 
+                            " (剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")", false);
+        }
+        else{
             boolean currentSide = board.isRedTurn(); 
             String lastMoverName = isLastMoverRed ? "红方" : "黑方";
             
             frame.updateStatus("已撤回" + lastMoverName + "的棋。当前回合：" + (currentSide ? "红方" : "黑方") + 
-                               " (剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")", false);
-        } else {
-            JOptionPane.showMessageDialog(null, "已经没有棋可以悔了！");
+                            " (剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")", false);
         }
+    }
+
+    private void triggerAIMove() {
+        isAIThinking = true;
+        frame.updateStatus("AI 正在思考中，请稍候...", false);
+
+        new Thread(() -> {
+            MoveRecord aiMove = aiPlayer.findBestMove( 4); 
+
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                if (aiMove != null && !isGameOver&& isAIThinking) { 
+                    board.tryMove(aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
+                    boardPanel.showLastMove(aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
+                    boardPanel.repaint();
+                    
+                    boolean nextTurnIsRed = board.isRedTurn();
+                    String nextSideName = nextTurnIsRed ? "红方" : "黑方";
+                    String undoInfo = "(剩余悔棋次数 红:" + redUndoCount + " 黑:" + blackUndoCount + ")";
+                    if (board.isInCheck(nextTurnIsRed)) {
+                        frame.updateStatus("当前回合：" + nextSideName + "正被将军！" + undoInfo, true);
+                    } else {
+                        frame.updateStatus("当前回合：" + nextSideName + undoInfo, false);
+                    }
+                    
+                    checkGameOver();
+                }
+                
+                isAIThinking = false; 
+            });
+        }).start();
     }
 }

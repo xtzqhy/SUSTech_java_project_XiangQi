@@ -87,6 +87,10 @@ public class Board {
         return isRedTurn;
     }
 
+    public List<MoveRecord> getHistory() {
+        return history;
+    }
+
     // 检查某一方的将帅是否安全
     private boolean isGeneralSafe(boolean isRedSide) {
         int generalRow = -1, generalCol = -1;
@@ -247,5 +251,58 @@ public class Board {
         pieces[last.toRow][last.toCol] = last.capturedPiece;
         isRedTurn = !isRedTurn;
         return true;
+    }
+
+    public List<MoveRecord> getAllLegalMoves(boolean isRedSide) {
+        List<MoveRecord> legalMoves = new ArrayList<>();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece piece = pieces[r][c];
+                if (piece != null && piece.isRed() == isRedSide) {
+                    for (int tr = 0; tr < ROWS; tr++) {
+                        for (int tc = 0; tc < COLS; tc++) {
+                            if (isPseudoLegalMove(r, c, tr, tc) && wouldBeSafe(r, c, tr, tc)) {
+                                legalMoves.add(new MoveRecord(r, c, tr, tc, pieces[tr][tc]));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return legalMoves;
+    }
+
+    //评估当前局面得分
+    public int evaluate() {
+        int score = 0;
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Piece p = pieces[r][c];
+                if (p != null) {
+                    int value = 0;
+                    if (p instanceof GeneralPiece) value = 10000;
+                    else if (p instanceof ChariotPiece) value = 900;
+                    else if (p instanceof CannonPiece) value = 450;
+                    else if (p instanceof HorsePiece) value = 400;
+                    else if (p instanceof AdvisorPiece) value = 200;
+                    else if (p instanceof ElephantPiece) value = 200;
+                    else if (p instanceof SoldierPiece) value = 100;
+                    
+                    score += p.isRed() ? value : -value;
+                }
+            }
+        }
+        return score;
+    }
+
+    public Board copy() {
+        Board newBoard = new Board();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                newBoard.pieces[r][c] = this.pieces[r][c]; 
+            }
+        }
+        newBoard.isRedTurn = this.isRedTurn;
+        return newBoard;
     }
 }
