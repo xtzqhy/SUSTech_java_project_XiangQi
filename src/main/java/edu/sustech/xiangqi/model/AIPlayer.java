@@ -72,13 +72,14 @@ public class AIPlayer {
     }
 
     private int minimax(Board simBoard,int depth, int alpha, int beta, boolean isMaximizing) {
-        if (depth == 0 || board.getAllLegalMoves(isMaximizing).isEmpty()) {
+        if (depth == 0 || simBoard.getAllLegalMoves(isMaximizing).isEmpty()) {
             return simBoard.evaluate();
         }
 
-        List<MoveRecord> moves = simBoard.getAllLegalMoves(true);
-        sortMoves(simBoard,moves); 
+         
         if (isMaximizing) { 
+            List<MoveRecord> moves = simBoard.getAllLegalMoves(true);
+            sortMoves(simBoard,moves);
             for (MoveRecord move : moves) {
                 simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 alpha = Math.max(alpha,minimax(simBoard,depth - 1, alpha, beta, false));
@@ -89,6 +90,8 @@ public class AIPlayer {
             }
             return alpha;
         } else { 
+            List<MoveRecord> moves = simBoard.getAllLegalMoves(false);
+            sortMoves(simBoard,moves);
             for (MoveRecord move : moves) {
                 simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 beta = Math.min(beta,minimax(simBoard,depth - 1, alpha, beta, true));
