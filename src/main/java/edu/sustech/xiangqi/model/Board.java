@@ -178,7 +178,7 @@ public class Board {
         return true;
     }
 
-    //模拟移动
+    //模拟移动并判断是否会将军
     private boolean wouldBeSafe(int fromRow, int fromCol, int toRow, int toCol) {
         Piece piece = pieces[fromRow][fromCol];
         Piece targetPiece = pieces[toRow][toCol];
@@ -253,6 +253,7 @@ public class Board {
         return true;
     }
 
+    //获得所有合法走法
     public List<MoveRecord> getAllLegalMoves(boolean isRedSide) {
         List<MoveRecord> legalMoves = new ArrayList<>();
         for (int r = 0; r < ROWS; r++) {
@@ -272,27 +273,75 @@ public class Board {
         return legalMoves;
     }
 
-    //评估当前局面得分
+    // 评估当前局面得分
     public int evaluate() {
         int score = 0;
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 Piece p = pieces[r][c];
                 if (p != null) {
-                    int value = 0;
-                    if (p instanceof GeneralPiece) value = 10000;
-                    else if (p instanceof ChariotPiece) value = 900;
-                    else if (p instanceof CannonPiece) value = 450;
-                    else if (p instanceof HorsePiece) value = 400;
-                    else if (p instanceof AdvisorPiece) value = 200;
-                    else if (p instanceof ElephantPiece) value = 200;
-                    else if (p instanceof SoldierPiece) value = 100;
-                    
+                    int value = getBaseValue(p) + getPositionBonus(p, r, c);
                     score += p.isRed() ? value : -value;
                 }
             }
         }
+        //如果红方合法走法多，给红方加分
+        int redMoves = getAllLegalMoves(true).size();
+        int blackMoves = getAllLegalMoves(false).size();
+        score += (redMoves - blackMoves) * 2; 
         return score;
+    }
+
+    //基础子力价值
+    public static int getBaseValue(Piece p) {
+        if (p instanceof GeneralPiece) return 10000;
+        if (p instanceof ChariotPiece) return 900;
+        if (p instanceof CannonPiece) return 450;
+        if (p instanceof HorsePiece) return 400;
+        if (p instanceof AdvisorPiece) return 200;
+        if (p instanceof ElephantPiece) return 200;
+        if (p instanceof SoldierPiece) return 100;
+        return 0;
+    }
+
+    //位置价值加成
+    private int getPositionBonus(Piece p, int r, int c) {
+        int bonus = 0;
+        
+        //兵/卒的加成
+        if (p instanceof SoldierPiece) {
+            boolean isRed = p.isRed();
+            //如果过了河加分
+            if ((isRed && r <= 4) || (!isRed && r >= 5)) {
+                bonus += 50;
+                //越靠近敌方底线，价值越高
+                if (isRed) bonus += (4 - r) * 10;
+                else bonus += (r - 5) * 10;
+            }
+        }
+        
+        //马的加成
+        if (p instanceof HorsePiece) {
+            //离中路越近，分数越高
+            if (c >= 2 && c <= 6) bonus += 30; 
+            //在边线扣分
+            if (c == 0 || c == 8) bonus -= 50; 
+            //过河的马更威猛
+            if ((p.isRed() && r <= 4) || (!p.isRed() && r >= 5)) bonus += 20;
+        }
+        
+        //炮的加成
+        if (p instanceof CannonPiece) {
+            //在中路加分
+            if (c == 4) bonus += 20;
+        }
+
+        //车的加成（车在巡河线或者直线畅通更好，这里简化为不要太靠底线）
+        if (p instanceof ChariotPiece) {
+            if (c == 0 || c == 8) bonus -= 10;
+        }
+
+        return bonus;
     }
 
     public Board copy() {

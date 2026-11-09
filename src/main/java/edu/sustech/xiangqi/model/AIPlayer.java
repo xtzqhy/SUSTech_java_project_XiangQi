@@ -13,31 +13,62 @@ public class AIPlayer {
 
     //规定红方想让得分最大，黑方想让得分最小
     public MoveRecord findBestMove(int depth) {
-        Board simBoard = this.board.copy();     
+        MoveRecord globalBestMove = null;
 
-        List<MoveRecord> moves = simBoard.getAllLegalMoves(isRed);
-        if (moves.isEmpty()) return null; 
+        for (int currentDepth = 1; currentDepth <= depth; currentDepth++) {
+            Board simBoard = this.board.copy();     
+            List<MoveRecord> moves = simBoard.getAllLegalMoves(isRed);
+            if (moves.isEmpty()) return null; 
 
-        MoveRecord bestMove = null;
-        int bestScore = isRed ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            sortMoves(simBoard,moves);
 
-        for (MoveRecord move : moves) {
-            simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
-            int currentScore = minimax(simBoard,depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, !isRed);
-            simBoard.undoMove();
-            if (isRed) {
-                if (currentScore > bestScore) {
-                    bestScore = currentScore;
-                    bestMove = move;
+            if (globalBestMove != null) {
+                int bestIdx = -1;
+                for (int i = 0; i < moves.size(); i++) {
+                    MoveRecord m = moves.get(i);
+                    if (m.fromRow == globalBestMove.fromRow && m.fromCol == globalBestMove.fromCol && 
+                        m.toRow == globalBestMove.toRow && m.toCol == globalBestMove.toCol) {
+                        bestIdx = i;
+                        break;
+                    }
                 }
-            } else {
-                if (currentScore < bestScore) {
-                    bestScore = currentScore;
-                    bestMove = move;
+                if (bestIdx!=-1) {
+                    MoveRecord temp = moves.remove(bestIdx);
+                    moves.add(0, temp);
                 }
             }
+
+            MoveRecord currentBestMove = null;
+            int bestScore = isRed ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+
+            int alpha = Integer.MIN_VALUE;
+            int beta = Integer.MAX_VALUE;
+
+            for (MoveRecord move : moves) {
+                simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                
+                int currentScore = minimax(simBoard, currentDepth - 1, alpha, beta, !isRed);
+                
+                simBoard.undoMove();
+                
+                if (isRed) {
+                    if (currentScore > bestScore) {
+                        bestScore = currentScore;
+                        currentBestMove = move;
+                    }
+                    alpha = Math.max(alpha, bestScore); 
+                } else {
+                    if (currentScore < bestScore) {
+                        bestScore = currentScore;
+                        currentBestMove = move;
+                    }
+                    beta = Math.min(beta, bestScore);   
+                }
+            }
+            
+            globalBestMove = currentBestMove;
         }
-        return bestMove;
+        return globalBestMove;
     }
 
     private int minimax(Board simBoard,int depth, int alpha, int beta, boolean isMaximizing) {
@@ -45,8 +76,9 @@ public class AIPlayer {
             return simBoard.evaluate();
         }
 
+        List<MoveRecord> moves = simBoard.getAllLegalMoves(true);
+        sortMoves(simBoard,moves); 
         if (isMaximizing) { 
-            List<MoveRecord> moves = simBoard.getAllLegalMoves(true);
             for (MoveRecord move : moves) {
                 simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 alpha = Math.max(alpha,minimax(simBoard,depth - 1, alpha, beta, false));
@@ -57,7 +89,6 @@ public class AIPlayer {
             }
             return alpha;
         } else { 
-            List<MoveRecord> moves = simBoard.getAllLegalMoves(false);
             for (MoveRecord move : moves) {
                 simBoard.tryMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
                 beta = Math.min(beta,minimax(simBoard,depth - 1, alpha, beta, true));
@@ -68,5 +99,26 @@ public class AIPlayer {
             }
             return beta;
         }
+    }
+
+    //排序剪枝
+    private void sortMoves(Board simBoard, List<MoveRecord> moves) {
+        moves.sort((m1, m2) -> {
+            int score1 = 0, score2 = 0;
+            
+            if (m1.capturedPiece != null) {
+                // 被吃子价值 * 10，减去 攻击者价值（越小越好）
+                int victimValue = Board.getBaseValue(m1.capturedPiece);
+                int attackerValue = Board.getBaseValue(simBoard.getPieceAt(m1.fromRow, m1.fromCol));
+                score1 = victimValue * 10 - attackerValue;
+            }
+            
+            if (m2.capturedPiece != null) {
+                int victimValue = Board.getBaseValue(m2.capturedPiece);
+                int attackerValue = Board.getBaseValue(simBoard.getPieceAt(m2.fromRow, m2.fromCol));
+                score2 = victimValue * 10 - attackerValue;
+            }
+            return score2 - score1; // 降序
+        });
     }
 }
